@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스토리 오프닝 - 삐리뽀의 불시착</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #080810;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* 전체 게임 화면 컨테이너 */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* 배경 이미지 화면 */
+        #bg-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        /* 하단 비주얼 노블스타일 반투명 텍스트 박스 */
+        .dialogue-box {
+            position: absolute;
+            bottom: 5vh;
+            width: 88%;
+            max-width: 960px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 18px;
+            padding: 24px 32px;
+            color: #ffffff;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 화자 이름 태그 */
+        .speaker-tag {
+            display: inline-block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #4ade80; /* 귀여운 연두색 포인트 */
+            background: rgba(255, 255, 255, 0.08);
+            padding: 4px 14px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            letter-spacing: -0.3px;
+        }
+
+        /* 이름이 없을 때 처리 */
+        .speaker-tag:empty {
+            display: none;
+        }
+
+        /* 대사 본문 */
+        .story-text {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            word-break: keep-all;
+            min-height: 2.8em;
+            color: #f1f5f9;
+        }
+
+        /* 클릭 안내 아이콘 */
+        .click-prompt {
+            position: absolute;
+            right: 24px;
+            bottom: 16px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.45);
+            animation: bounce 1.2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); opacity: 0.4; }
+            50% { transform: translateY(-4px); opacity: 0.9; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <img id="bg-image" src="" alt="Story Scene">
+        
+        <div class="dialogue-box">
+            <div id="speaker" class="speaker-tag"></div>
+            <div id="text" class="story-text"></div>
+            <div class="click-prompt">▼ 클릭하여 계속</div>
+        </div>
+    </div>
+
+    <script>
+        // 스토리 연출 데이터 (요청하신 대사와 연출 순서 완벽 적용)
+        const storyData = [
+            {
+                image: "01_dawn.png",            /* 1번 사진: 새벽 창문 */
+                speaker: "",
+                text: "어느날 새벽..."
+            },
+            {
+                image: "02_shooting_star.png",   /* 2번 사진: 반짝인 유성 */
+                speaker: "",
+                text: "(반짝!)"
+            },
+            {
+                image: "03_morning.png",         /* 3번 사진: 아침 창문 */
+                speaker: "",
+                text: "다음날 아침"
+            },
+            {
+                image: "04_sprout.png",          /* 4번 사진: 길가 새싹 */
+                speaker: "나",
+                text: "평소와 같이 외출을 하는데.. 음? 저 새싹 뭔가 수상한데..? 움직이고 있는거 아니야?"
+            },
+            {
+                image: "05_catch_alien.jpg",     /* 5번 사진 대사 1 */
+                speaker: "???",
+                text: "뭐야!! 이거 놔라삐립!!!"
+            },
+            {
+                image: "05_catch_alien.jpg",     /* 5번 사진 대사 2 */
+                speaker: "나",
+                text: "뭐야 너는?"
+            },
+            {
+                image: "05_catch_alien.jpg",     /* 5번 사진 대사 3 */
+                speaker: "삐리뽀",
+                text: "나는 삐리뽀다삐립!"
+            },
+            {
+                image: "06_crying_alien.png",    /* 6번 사진: 울컥하는 삐리뽀 */
+                speaker: "삐리뽀",
+                text: "혹시 내 얘기 좀 들어줄 수 있냐삐립?"
+            },
+            {
+                image: "07_space_flight.jpg",    /* 7번 사진: 우주 항해 중 */
+                speaker: "삐리뽀",
+                text: "나는 원래 화성 탐사를 위해 화성으로 향하는중이었다삐립.."
+            },
+            {
+                image: "08_satellite_warning.png", /* 8번 사진: 위성 혼선 경고 */
+                speaker: "삐리뽀",
+                text: "그런데 너희 지구인들이 우주에 잔뜩 뿌려놓은 인공 위성때문에 신호체계가 방해되어서 우주선이 말을 안 듣기 시작했다삐립!!!"
+            },
+            {
+                image: "09_crash_earth.png",     /* 9번 사진: 지구 대기권 불시착 */
+                speaker: "삐리뽀",
+                text: "다행히 지구 궤도 안으로 들어와서 어떻게든 착륙을 하긴 했지만.."
+            },
+            {
+                image: "10_core_scatter.png",    /* 10번 사진: 코어 분산 폭발 */
+                speaker: "삐리뽀",
+                text: "우주선 코어가 불시착하는 과정에서 4개로 흩어져 떨어져 버렸다삐립.."
+            },
+            {
+                image: "11_help_me.png",         /* 11번 사진 대사 1 */
+                speaker: "삐리뽀",
+                text: "내가 다시 돌아가려면 코어 4개를 모아야한다 삐립!"
+            },
+            {
+                image: "11_help_me.png",         /* 11번 사진 대사 2 */
+                speaker: "삐리뽀",
+                text: "이 근처에서 코어 전파가 느껴진다 삐립! 도와달라 삐립!!"
+            }
+        ];
+
+        let currentIndex = 0;
+        let lastImage = "";
+
+        const bgImage = document.getElementById('bg-image');
+        const speakerEl = document.getElementById('speaker');
+        const textEl = document.getElementById('text');
+        const container = document.getElementById('game-container');
+
+        // 장면에 맞춰 이미지와 대사 갱신
+        function updateScene() {
+            const current = storyData[currentIndex];
+            
+            // 이미지 변경 시에만 페이드 효과 적용 (같은 이미지에서 대사만 바뀔 때는 자연스럽게 대사만 교체)
+            if (lastImage !== current.image) {
+                bgImage.style.opacity = 0;
+                setTimeout(() => {
+                    bgImage.src = current.image;
+                    bgImage.style.opacity = 1;
+                }, 150);
+                lastImage = current.image;
+            }
+
+            speakerEl.textContent = current.speaker;
+            textEl.textContent = current.text;
+        }
+
+        // 클릭 및 키보드(Space, Enter) 입력 이벤트
+        function nextScene() {
+            if (currentIndex < storyData.length - 1) {
+                currentIndex++;
+                updateScene();
+            } else {
+                alert("오프닝 스토리가 끝났습니다! 메인 게임 화면으로 이동합니다.");
+                // window.location.href = "game.html"; // 메인 게임 페이지 주소가 있다면 연결
+            }
+        }
+
+        container.addEventListener('click', nextScene);
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'Enter') {
+                nextScene();
+            }
+        });
+
+        // 첫 번째 대사로 초기화
+        updateScene();
+    </script>
+</body>
+</html>
