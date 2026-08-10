@@ -31,12 +31,33 @@
             cursor: pointer;
         }
 
-        /* 배경 이미지 화면 */
-        #bg-image {
+        /* 이미지 크로스 페이드를 위한 레이어 컨테이너 */
+        #image-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 공통 배경 이미지 스타일 */
+        .bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: opacity 0.2s ease-in-out;
+            /* 더 매끄러운 크로스 페이드를 위해 transition 시간을 0.5s로 설정 */
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* 초기 상태: 첫 번째 이미지는 활성화, 두 번째 이미지는 비활성화 */
+        #bg-image-1 {
+            opacity: 1;
+        }
+        #bg-image-2 {
+            opacity: 0;
         }
 
         /* 하단 비주얼 노블스타일 반투명 텍스트 박스 */
@@ -53,6 +74,8 @@
             padding: 24px 32px;
             color: #ffffff;
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+            /* 텍스트 박스가 이미지 위에 오도록 설정 */
+            z-index: 10;
         }
 
         /* 화자 이름 태그 */
@@ -101,7 +124,11 @@
 <body>
 
     <div id="game-container">
-        <img id="bg-image" src="" alt="Story Scene">
+        <!-- 두 개의 이미지 레이어 -->
+        <div id="image-layer">
+            <img id="bg-image-1" class="bg-image" src="" alt="Story Scene 1">
+            <img id="bg-image-2" class="bg-image" src="" alt="Story Scene 2">
+        </div>
         
         <div class="dialogue-box">
             <div id="speaker" class="speaker-tag"></div>
@@ -111,7 +138,7 @@
     </div>
 
     <script>
-        // 스토리 연출 데이터 (요청하신 대사와 연출 순서 완벽 적용)
+        // 스토리 연출 데이터 (수정된 이미지 파일 이름과 대사 매핑)
         const storyData = [
             {
                 image: "01_dawn.png",            /* 1번 사진: 새벽 창문 */
@@ -187,28 +214,64 @@
 
         let currentIndex = 0;
         let lastImage = "";
+        let activeLayer = 1; // 1: bg-image-1, 2: bg-image-2
 
-        const bgImage = document.getElementById('bg-image');
+        const bgImage1 = document.getElementById('bg-image-1');
+        const bgImage2 = document.getElementById('bg-image-2');
         const speakerEl = document.getElementById('speaker');
         const textEl = document.getElementById('text');
         const container = document.getElementById('game-container');
 
+        // 현재 활성화된 이미지 레이어와 다음 이미지 레이어 객체를 반환
+        function getActiveLayers() {
+            if (activeLayer === 1) {
+                return { current: bgImage1, next: bgImage2 };
+            } else {
+                return { current: bgImage2, next: bgImage1 };
+            }
+        }
+
+        // 이미지 크로스 페이드를 위한 함수
+        function crossFade(currentLayer, nextLayer) {
+            currentLayer.style.opacity = 0;
+            nextLayer.style.opacity = 1;
+            // 활성화된 레이어 변수 업데이트
+            activeLayer = (activeLayer === 1) ? 2 : 1;
+        }
+
         // 장면에 맞춰 이미지와 대사 갱신
         function updateScene() {
             const current = storyData[currentIndex];
-            
-            // 이미지 변경 시에만 페이드 효과 적용 (같은 이미지에서 대사만 바뀔 때는 자연스럽게 대사만 교체)
+            const layers = getActiveLayers();
+
+            // 이미지 변경 시에만 크로스 페이드 적용
             if (lastImage !== current.image) {
-                bgImage.style.opacity = 0;
-                setTimeout(() => {
-                    bgImage.src = current.image;
-                    bgImage.style.opacity = 1;
-                }, 150);
+                // 다음 이미지 레이어의 src를 설정하고, 로딩이 완료되면 크로스 페이드 실행
+                layers.next.src = current.image;
+                layers.next.onload = () => {
+                    crossFade(layers.current, layers.next);
+                };
                 lastImage = current.image;
             }
 
+            // 대사와 화자 업데이트는 이미지 로딩과 동시에 실행하여 대사 박스 전환을 빠르게
             speakerEl.textContent = current.speaker;
             textEl.textContent = current.text;
+
+            // 다음 이미지를 배경에서 미리 프리로딩
+            preLoadNextImage();
+        }
+
+        // 다음 이미지를 미리 로딩하여 클릭 시 로딩 지연 방지
+        function preLoadNextImage() {
+            if (currentIndex < storyData.length - 1) {
+                const nextImageSrc = storyData[currentIndex + 1].image;
+                // 이전 이미지와 다른 이미지일 때만 프리로딩
+                if (nextImageSrc !== lastImage) {
+                    const imgPreload = new Image();
+                    imgPreload.src = nextImageSrc;
+                }
+            }
         }
 
         // 클릭 및 키보드(Space, Enter) 입력 이벤트
@@ -229,7 +292,9 @@
             }
         });
 
-        // 첫 번째 대사로 초기화
+        // 첫 번째 대사로 초기화 (초기 이미지 레이어 src 설정)
+        bgImage1.src = storyData[currentIndex].image;
+        lastImage = storyData[currentIndex].image;
         updateScene();
     </script>
 </body>
